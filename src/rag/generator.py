@@ -5,42 +5,40 @@ It contains the prompt templates necessary to instruct the LLM on how to use the
 context.
 """
 
+import math
 from config.logging_config import setup_logger
 from config.settings import settings
+from rag.prompts.prompts import build_generator_prompt
 
 logger = setup_logger(__name__)
-
 
 class LLMGenerator:
     def __init__(self):
         self.source = getattr(settings, "LLM_SOURCE", "openai").lower()
+        
         if self.source == "openai":
             from openai import AsyncOpenAI
-
-            self.client = AsyncOpenAI(
-                api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_API_BASE_URL
-            )
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, base_url=settings.OPENAI_API_BASE_URL)
             self.model = getattr(settings, "OPENAI_LLM_MODEL", "gpt-4o-mini")
         elif self.source == "ollama":
             import ollama
-
-            self.client = ollama
+            # Initialize async client (assumes local ollama on default port, or use settings.OLLAMA_BASE_URL)
+            base_url = getattr(settings, "OLLAMA_BASE_URL", None)
+            if base_url:
+                self.client = ollama.AsyncClient(host=base_url)
+            else:
+                self.client = ollama.AsyncClient()
             self.model = getattr(settings, "OLLAMA_LLM_MODEL", "llama3")
         else:
             raise ValueError(f"Unsupported LLM Source: {self.source}")
 
-    def _build_prompt(self, query: str, retrieved_context: list[dict]) -> str:
-        context_str = "\n\n".join([item["chunk"] for item in retrieved_context])
-        return f"""You are a helpful AI assistant. Answer the user's question based ONLY on the provided context below.
-If you cannot answer the question based on the context, say "I don't know based on the provided context."
+    def _build_prompt(self, query: str, context_docs: list[dict]) -> str:
+        context_str = "\n\n".join([doc.get("chunk", str(doc)) if isinstance(doc, dict) else str(doc) for doc in context_docs])
+        return build_generator_prompt(query, context_str)
 
-Context:
-{context_str}
-
-User Question: {query}
-Answer:"""
-
-    async def generate_answer(self, query: str, retrieved_context: list[dict]) -> str:
+    async def generate_answer(
+        self, query: str, retrieved_context: list[dict], return_usage: bool = False
+    ):
         prompt = self._build_prompt(query, retrieved_context)
         logger.info(f"Generating answer using {self.source} ({self.model})")
 
@@ -49,14 +47,42 @@ Answer:"""
                 response = await self.client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.0,
+                    temperature=settings.OPENAI_TEMPERATURE,
+                    logprobs=True
                 )
-                return response.choices[0].message.content
+                answer = response.choices[0].message.content
+                
+                confidence = 1.0
+                if hasattr(response.choices[0], "logprobs") and response.choices[0].logprobs:
+                    content_logprobs = response.choices[0].logprobs.content
+                    if content_logprobs:
+                        avg_logprob = sum(token.logprob for token in content_logprobs) / len(content_logprobs)
+                        confidence = math.exp(avg_logprob)
+
+                if return_usage and hasattr(response, "usage"):
+                    return answer, {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens,
+                        "confidence_score": confidence
+                    }
+                return (
+                    answer
+                    if not return_usage
+                    else (answer, {"prompt_tokens": 0, "completion_tokens": 0, "confidence_score": confidence})
+                )
             elif self.source == "ollama":
                 # Note: Assuming ollama has a chat method or generate method.
                 # using sync ollama wrapper, might block async loop slightly, but OK for MVP.
-                response = self.client.generate(model=self.model, prompt=prompt)
-                return response["response"]
+                response = await self.client.generate(model=self.model, prompt=prompt, options={"temperature": settings.OLLAMA_TEMPERATURE})
+                answer = response["response"]
+                # Ollama returns eval_count and prompt_eval_count in some versions
+                if return_usage:
+                    return answer, {
+                        "prompt_tokens": response.get("prompt_eval_count", 0),
+                        "completion_tokens": response.get("eval_count", 0),
+                        "confidence_score": None
+                    }
+                return answer
         except Exception as e:
             logger.error(f"Error generating answer: {e}")
             raise
@@ -68,13 +94,13 @@ Answer:"""
             stream = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.0,
+                temperature=settings.OPENAI_TEMPERATURE,
                 stream=True,
             )
             async for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     yield chunk.choices[0].delta.content
         elif self.source == "ollama":
-            stream = self.client.generate(model=self.model, prompt=prompt, stream=True)
-            for chunk in stream:
+            stream = await self.client.generate(model=self.model, prompt=prompt, options={"temperature": settings.OLLAMA_TEMPERATURE}, stream=True)
+            async for chunk in stream:
                 yield chunk["response"]

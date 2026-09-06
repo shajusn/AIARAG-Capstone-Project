@@ -1,0 +1,7 @@
+{
+  "task_success_rate": { "acceptable": 0.60, "good": 0.80 },
+  "groundedness": { "acceptable": 0.80, "good": 0.95 },
+  "retrieval_rate": { "acceptable": 0.70, "good": 0.90 },
+  "cost_per_query": { "acceptable": 0.01, "good": 0.005 },
+  "latency_p95": { "acceptable": 3.0, "good": 1.5 }
+}
