@@ -20,13 +20,26 @@ class Settings(BaseSettings):
     )
     DATA_DIRECTORY: str = ""
     EMBEDDING_MODEL_SOURCE: str = ""
+    LLM_SOURCE: str = "openai"
 
     OPENAI_API_KEY: str = ""
     OPENAI_API_BASE_URL: str = ""
     OPENAI_API_EMBEDDING_MODEL: str = ""
+    OPENAI_LLM_MODEL: str = "gpt-4o-mini"
+    OPENAI_TEMPERATURE: float = 0.0
+    JUDGE_SOURCE: str = "openai"
+    OPENAI_JUDGE_MODEL: str = "gpt-4o-mini"
+    HUGGINGFACE_JUDGE_MODEL: str = "meta-llama/Meta-Llama-3-8B-Instruct"
+    OLLAMA_JUDGE_MODEL: str = "llama3"
+
+    EMBEDDING_COST_PER_1M_TOKENS: float = 0.1
+    LLM_INPUT_COST_PER_1M_TOKENS: float = 0.15
+    LLM_OUTPUT_COST_PER_1M_TOKENS: float = 0.6
 
     OLLAMA_BASE_URL: str = ""
     OLLAMA_EMBEDDING_MODEL: str = ""
+    OLLAMA_LLM_MODEL: str = "llama3"
+    OLLAMA_TEMPERATURE: float = 0.0
 
     DOCKER_BASE_URL: str = ""
     DOCKER_EMBEDDING_MODEL: str = ""

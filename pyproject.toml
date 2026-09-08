@@ -25,6 +25,7 @@ dependencies = [
     "pinecone-client",
     "sentence-transformers",
     "cohere",
+    "huggingface_hub",
 ]
 
 [tool.black]
