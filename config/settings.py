@@ -50,11 +50,18 @@ class Settings(BaseSettings):
     VECTOR_STORE_TYPE: str = "json"
     VECTOR_STORE_PATH: str = "data/vector_store.json"
     CHROMA_PERSIST_DIR: str = "data/chroma"
+    CHROMA_COLLECTION: str = "rag_documents"
     PINECONE_API_KEY: str = ""
     PINECONE_INDEX_NAME: str = ""
     QDRANT_URL: str = ""
     QDRANT_API_KEY: str = ""
     QDRANT_COLLECTION: str = ""
+
+    USE_HYBRID_SEARCH: bool = False
+    USE_HYBRID_EMBEDDING: bool = True
+    SPARSE_EMBEDDING_MODEL: str = "splade"  # Options: splade, bm25
+    SPLADE_MODEL: str = "prithvida/Splade_PP_en_v1"
+    BM25_MODEL: str = "Qdrant/bm25"
 
     USE_RERANKER: bool = False
     RERANKER_TYPE: str = "cross_encoder"  # Options: cross_encoder, cohere
@@ -64,6 +71,9 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     TOP_K: int = 5
+
+    USE_MULTI_QUERY: bool = False
+    USE_QUERY_DECOMPOSITION: bool = False
 
 
 settings = Settings()
