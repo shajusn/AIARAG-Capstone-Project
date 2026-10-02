@@ -145,7 +145,18 @@ async def main():
         print("Error: Could not load golden dataset.")
         sys.exit(1)
 
-    print(f"Successfully loaded {len(golden_dataset)} items from {golden_path}\n")
+    limit = None
+    if len(sys.argv) > 1:
+        try:
+            limit = int(sys.argv[1])
+        except ValueError:
+            print(f"Warning: Invalid limit '{sys.argv[1]}'. Running full evaluation.")
+
+    if limit and limit > 0:
+        golden_dataset = golden_dataset[:limit]
+        print(f"Successfully loaded {len(golden_dataset)} items (limited from {golden_path})\n")
+    else:
+        print(f"Successfully loaded {len(golden_dataset)} items from {golden_path}\n")
 
     # Load thresholds
     try:
