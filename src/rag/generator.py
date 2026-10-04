@@ -15,6 +15,10 @@ logger = setup_logger(__name__)
 class LLMGenerator:
     def __init__(self):
         self.source = getattr(settings, "LLM_SOURCE", "openai").lower()
+        self.compressor = None
+        if getattr(settings, "USE_PROMPT_COMPRESSION", False):
+            from rag.prompt_compressor import get_prompt_compressor
+            self.compressor = get_prompt_compressor()
         
         if self.source == "openai":
             from openai import AsyncOpenAI
@@ -32,9 +36,11 @@ class LLMGenerator:
         else:
             raise ValueError(f"Unsupported LLM Source: {self.source}")
 
-    def _build_prompt(self, query: str, context_docs: list[dict]) -> str:
+    def _build_prompt(self, query: str, context_docs: list[dict]) -> tuple[str, str]:
         context_str = "\n\n".join([doc.get("chunk", str(doc)) if isinstance(doc, dict) else str(doc) for doc in context_docs])
-        return build_generator_prompt(query, context_str)
+        if self.compressor:
+            context_str = self.compressor.compress_context(query, context_str)
+        return build_generator_prompt(query, context_str), context_str
 
     async def generate_text(self, prompt: str) -> str:
         """Generic method to generate text given a prompt (e.g. for query augmentation)."""
@@ -61,7 +67,7 @@ class LLMGenerator:
     async def generate_answer(
         self, query: str, retrieved_context: list[dict], return_usage: bool = False
     ):
-        prompt = self._build_prompt(query, retrieved_context)
+        prompt, final_context_str = self._build_prompt(query, retrieved_context)
         logger.info(f"Generating answer using {self.source} ({self.model})")
 
         try:
@@ -82,15 +88,18 @@ class LLMGenerator:
                         confidence = math.exp(avg_logprob)
 
                 if return_usage and hasattr(response, "usage"):
+                    import tiktoken
+                    encoder = tiktoken.get_encoding("cl100k_base")
                     return answer, {
                         "prompt_tokens": response.usage.prompt_tokens,
                         "completion_tokens": response.usage.completion_tokens,
-                        "confidence_score": confidence
+                        "confidence_score": confidence,
+                        "context_tokens": len(encoder.encode(final_context_str))
                     }
                 return (
                     answer
                     if not return_usage
-                    else (answer, {"prompt_tokens": 0, "completion_tokens": 0, "confidence_score": confidence})
+                    else (answer, {"prompt_tokens": 0, "completion_tokens": 0, "confidence_score": confidence, "context_tokens": 0})
                 )
             elif self.source == "ollama":
                 # Note: Assuming ollama has a chat method or generate method.
@@ -99,10 +108,13 @@ class LLMGenerator:
                 answer = response["response"]
                 # Ollama returns eval_count and prompt_eval_count in some versions
                 if return_usage:
+                    import tiktoken
+                    encoder = tiktoken.get_encoding("cl100k_base")
                     return answer, {
                         "prompt_tokens": response.get("prompt_eval_count", 0),
                         "completion_tokens": response.get("eval_count", 0),
-                        "confidence_score": None
+                        "confidence_score": None,
+                        "context_tokens": len(encoder.encode(final_context_str))
                     }
                 return answer
         except Exception as e:
@@ -110,7 +122,7 @@ class LLMGenerator:
             raise
 
     async def generate_stream(self, query: str, retrieved_context: list[dict]):
-        prompt = self._build_prompt(query, retrieved_context)
+        prompt, _ = self._build_prompt(query, retrieved_context)
 
         if self.source == "openai":
             stream = await self.client.chat.completions.create(

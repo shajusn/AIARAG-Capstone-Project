@@ -89,7 +89,7 @@ async def run_evaluation(
         cost_per_query = embedding_cost + llm_cost
         # Calculate token metrics
         context_str = "\n\n".join([doc.get("chunk", str(doc)) if isinstance(doc, dict) else str(doc) for doc in context])
-        tokens_on_retrieved_chunks = len(encoder.encode(context_str))
+        tokens_on_retrieved_chunks = usage_info.get("context_tokens", len(encoder.encode(context_str)))
         prompt_tokens = usage_info["prompt_tokens"]
         completion_tokens = usage_info["completion_tokens"]
         tokens_system_prompt = max(0, prompt_tokens - tokens_on_retrieved_chunks - embedding_tokens)
