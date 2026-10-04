@@ -9,8 +9,8 @@
 | Groundedness | 0.8 | 0.95 | 100.00% | Good |
 | Retrieval Hit Rate | 0.7 | 0.9 | 100.00% | Good |
 | Cost / Query | 0.01 | 0.005 | $0.00002 | Good |
-| Latency (p50) | N/A | N/A | 25.63s | N/A |
-| Latency (p95) | 3.0 | 1.5 | 40.98s | Poor |
+| Latency (p50) | N/A | N/A | 1.30s | N/A |
+| Latency (p95) | 3.0 | 1.5 | 2.77s | Acceptable |
 
 ## Metrics by Path Level
 
@@ -43,3 +43,9 @@
   }
 }
 ```
+
+## Cost Evaluation
+
+| Total Questions | Topk Value | Total Input Tokens | System Prompt Tokens | Retrieved Chunks Tokens | Question Embeding Tokens | Answer Generated Tokens | Cost | Avg Latency |
+|---|---|---|---|---|---|---|---|---|
+| 5 | 5 | 7693.0 | 1049.0 | 6578.0 | 66.0 | 121.0 | $0.000122 | 1.60s |

@@ -127,6 +127,24 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
         f.write(json.dumps(thresholds, indent=2))
         f.write("\n```\n")
 
+        # Add Cost Evaluation Table
+        if results:
+            from config.settings import settings
+            total_q = len(results)
+            top_k = getattr(settings, "TOP_K", "N/A")
+            tot_in_tokens = sum(r.get('total_input_tokens', 0) for r in results)
+            sys_tokens = sum(r.get('tokens_system_prompt', 0) for r in results)
+            ret_tokens = sum(r.get('tokens_on_retrieved_chunks', 0) for r in results)
+            emb_tokens = sum(r.get('embedding_token_consumption', 0) for r in results)
+            ans_tokens = sum(r.get('tokens_on_completion', 0) for r in results)
+            cost = sum(r.get('cost', 0) for r in results)
+            avg_latency = sum(r.get('total_time_taken', 0) for r in results) / total_q if total_q > 0 else 0
+
+            f.write("\n## Cost Evaluation\n\n")
+            f.write("| Total Questions | Topk Value | Total Input Tokens | System Prompt Tokens | Retrieved Chunks Tokens | Question Embeding Tokens | Answer Generated Tokens | Cost | Avg Latency |\n")
+            f.write("|---|---|---|---|---|---|---|---|---|\n")
+            f.write(f"| {total_q} | {top_k} | {tot_in_tokens:.1f} | {sys_tokens:.1f} | {ret_tokens:.1f} | {emb_tokens:.1f} | {ans_tokens:.1f} | ${cost:.6f} | {avg_latency:.2f}s |\n")
+
     print(f"\nReport successfully generated at: {report_path}")
 
 

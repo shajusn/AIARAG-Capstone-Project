@@ -3,6 +3,7 @@ Golden Set Evaluation Logic.
 """
 
 import json
+import tiktoken
 import time
 import asyncio
 import statistics
@@ -69,9 +70,9 @@ async def run_evaluation(
 
         total_latency = t2 - t0
 
+        encoder = tiktoken.get_encoding("cl100k_base")
         # Approximate tokens for embedding (query only since context is pre-embedded)
-        query_chars = len(query)
-        embedding_tokens = query_chars / 4.0
+        embedding_tokens = len(encoder.encode(query))
 
         from config.settings import settings
 
@@ -86,7 +87,13 @@ async def run_evaluation(
             * (settings.LLM_OUTPUT_COST_PER_1M_TOKENS / 1_000_000.0)
         )
         cost_per_query = embedding_cost + llm_cost
-
+        # Calculate token metrics
+        context_str = "\n\n".join([doc.get("chunk", str(doc)) if isinstance(doc, dict) else str(doc) for doc in context])
+        tokens_on_retrieved_chunks = len(encoder.encode(context_str))
+        prompt_tokens = usage_info["prompt_tokens"]
+        completion_tokens = usage_info["completion_tokens"]
+        tokens_system_prompt = max(0, prompt_tokens - tokens_on_retrieved_chunks - embedding_tokens)
+        
         # Evaluate with LLMJudge
         scores = await judge.evaluate_all(query, context, answer, expected_answer)
         task_success = scores["task_success"]
@@ -101,10 +108,16 @@ async def run_evaluation(
                 "generated_answer": answer,
                 "level": item_level,
                 "latency": total_latency,
+                "total_time_taken": total_latency,
                 "cost": cost_per_query,
                 "task_success": task_success,
                 "groundedness": groundedness,
                 "retrieval_hit": retrieval_hit,
+                "tokens_system_prompt": tokens_system_prompt,
+                "total_input_tokens": prompt_tokens,
+                "tokens_on_retrieved_chunks": tokens_on_retrieved_chunks,
+                "embedding_token_consumption": embedding_tokens,
+                "tokens_on_completion": completion_tokens,
             }
         )
 
@@ -119,6 +132,10 @@ def aggregate_metrics(results: List[Dict]) -> Dict[str, Any]:
     latencies.sort()
 
     def percentile(data, p):
+        if not data:
+            return 0.0
+        if len(data) == 1:
+            return data[0]
         k = (len(data) - 1) * p
         f = int(k)
         c = f + 1

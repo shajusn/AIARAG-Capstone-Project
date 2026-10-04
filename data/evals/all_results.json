@@ -5,11 +5,17 @@
         "ideal_answer": "In the United States, medical insurance is provided through Blue Cross Blue Shield PPO.",
         "generated_answer": "The company uses Blue Cross Blue Shield PPO for medical insurance in the United States.",
         "level": "happy_path",
-        "latency": 25.626998901367188,
-        "cost": 2.3854749999999997e-05,
+        "latency": 3.1366689205169678,
+        "total_time_taken": 3.1366689205169678,
+        "cost": 2.3848999999999998e-05,
         "task_success": 1.0,
         "groundedness": 1.0,
-        "retrieval_hit": 1.0
+        "retrieval_hit": 1.0,
+        "tokens_system_prompt": 201,
+        "total_input_tokens": 1529,
+        "tokens_on_retrieved_chunks": 1314,
+        "embedding_token_consumption": 14,
+        "tokens_on_completion": 18
     },
     {
         "id": "g002",
@@ -17,11 +23,17 @@
         "ideal_answer": "The company pays 75% of the premium, and the employee pays the remaining 25%.",
         "generated_answer": "The company covers 75% of the medical insurance premium.",
         "level": "happy_path",
-        "latency": 26.76115083694458,
-        "cost": 2.4342999999999997e-05,
+        "latency": 1.3184590339660645,
+        "total_time_taken": 1.3184590339660645,
+        "cost": 2.4336999999999998e-05,
         "task_success": 1.0,
         "groundedness": 1.0,
-        "retrieval_hit": 1.0
+        "retrieval_hit": 1.0,
+        "tokens_system_prompt": 223,
+        "total_input_tokens": 1575,
+        "tokens_on_retrieved_chunks": 1340,
+        "embedding_token_consumption": 12,
+        "tokens_on_completion": 14
     },
     {
         "id": "g003",
@@ -29,11 +41,17 @@
         "ideal_answer": "Dental insurance in the US is provided through MetLife.",
         "generated_answer": "The provider for dental insurance in the US is MetLife.",
         "level": "happy_path",
-        "latency": 44.53224301338196,
-        "cost": 2.355275e-05,
+        "latency": 1.1332550048828125,
+        "total_time_taken": 1.1332550048828125,
+        "cost": 2.3551e-05,
         "task_success": 1.0,
         "groundedness": 1.0,
-        "retrieval_hit": 1.0
+        "retrieval_hit": 1.0,
+        "tokens_system_prompt": 201,
+        "total_input_tokens": 1526,
+        "tokens_on_retrieved_chunks": 1314,
+        "embedding_token_consumption": 11,
+        "tokens_on_completion": 13
     },
     {
         "id": "g004",
@@ -41,11 +59,17 @@
         "ideal_answer": "The payroll deduction for employee-only medical coverage is $96.05 per pay period.",
         "generated_answer": "The payroll deduction for employee-only medical coverage is $96.05 each pay period.",
         "level": "happy_path",
-        "latency": 1.7163209915161133,
-        "cost": 2.4001249999999997e-05,
+        "latency": 1.0924878120422363,
+        "total_time_taken": 1.0924878120422363,
+        "cost": 2.3994999999999996e-05,
         "task_success": 1.0,
         "groundedness": 1.0,
-        "retrieval_hit": 1.0
+        "retrieval_hit": 1.0,
+        "tokens_system_prompt": 212,
+        "total_input_tokens": 1532,
+        "tokens_on_retrieved_chunks": 1305,
+        "embedding_token_consumption": 15,
+        "tokens_on_completion": 20
     },
     {
         "id": "g005",
@@ -53,10 +77,16 @@
         "ideal_answer": "The company offers a $400,000 life insurance and AD+D policy to all staff.",
         "generated_answer": "The life insurance policy offered to staff at 37signals is $400,000. This coverage is provided through MetLife and is available to all staff members upon their first day of employment. The policy is automatically terminated on the final day of employment.",
         "level": "happy_path",
-        "latency": 3.146070957183838,
-        "cost": 2.578375e-05,
+        "latency": 1.3010890483856201,
+        "total_time_taken": 1.3010890483856201,
+        "cost": 2.5779e-05,
         "task_success": 1.0,
         "groundedness": 1.0,
-        "retrieval_hit": 1.0
+        "retrieval_hit": 1.0,
+        "tokens_system_prompt": 212,
+        "total_input_tokens": 1531,
+        "tokens_on_retrieved_chunks": 1305,
+        "embedding_token_consumption": 14,
+        "tokens_on_completion": 56
     }
 ]
