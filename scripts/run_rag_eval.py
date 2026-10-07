@@ -7,10 +7,10 @@ Usage:
 `python scripts/run_rag_eval.py`
 """
 
-import sys
-import os
-import json
 import asyncio
+import json
+import os
+import sys
 
 # Ensure src/ and root are in PYTHONPATH
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -18,14 +18,16 @@ sys.path.insert(0, root_dir)
 sys.path.insert(0, os.path.join(root_dir, "src"))
 
 from config.logging_config import setup_logger
-from eval.golden import load_golden_set, run_evaluation, aggregate_metrics
+from eval.golden import aggregate_metrics, load_golden_set, run_evaluation
 from eval.judge import LLMJudge
 from pipeline.inference import InferencePipeline
 
 logger = setup_logger(__name__)
 
 
-def generate_report(metrics: dict, thresholds: dict, report_path: str, results: list = None):
+def generate_report(
+    metrics: dict, thresholds: dict, report_path: str, results: list = None
+):
     os.makedirs(os.path.dirname(report_path), exist_ok=True)
 
     def evaluate_metric(
@@ -76,9 +78,11 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
     with open(report_path, "w") as f:
         f.write("# RAG Evaluation Report\n\n")
         f.write("## Final Metrics vs Thresholds\n\n")
-        f.write("| Metric | Acceptable Threshold | Good Threshold | Value | Threshold Evaluation |\n")
+        f.write(
+            "| Metric | Acceptable Threshold | Good Threshold | Value | Threshold Evaluation |\n"
+        )
         f.write("|---|---|---|---|---|\n")
-        
+
         # Helper to get threshold string safely
         def get_thresh_str(metric_key, thresh_type):
             mapping = {
@@ -86,7 +90,7 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
                 "Groundedness": "groundedness",
                 "Retrieval Hit Rate": "retrieval_rate",
                 "Cost / Query": "cost_per_query",
-                "Latency (p95)": "latency_p95"
+                "Latency (p95)": "latency_p95",
             }
             if metric_key in mapping:
                 t = thresholds.get(mapping[metric_key], {})
@@ -102,9 +106,11 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
 
         if results:
             f.write("\n## Metrics by Path Level\n\n")
-            f.write("| Path Level | Count | Task Success Rate | Groundedness | Retrieval Hit Rate |\n")
+            f.write(
+                "| Path Level | Count | Task Success Rate | Groundedness | Retrieval Hit Rate |\n"
+            )
             f.write("|---|---|---|---|---|\n")
-            
+
             levels = {}
             for r in results:
                 lvl = r.get("level", "unknown")
@@ -114,13 +120,15 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
                 levels[lvl]["ts"] += r.get("task_success", 0.0)
                 levels[lvl]["gr"] += r.get("groundedness", 0.0)
                 levels[lvl]["rh"] += r.get("retrieval_hit", 0.0)
-                
+
             for lvl, data in levels.items():
                 c = data["count"]
                 ts_pct = (data["ts"] / c) if c > 0 else 0
                 gr_pct = (data["gr"] / c) if c > 0 else 0
                 rh_pct = (data["rh"] / c) if c > 0 else 0
-                f.write(f"| {lvl} | {c} | {ts_pct:.2%} | {gr_pct:.2%} | {rh_pct:.2%} |\n")
+                f.write(
+                    f"| {lvl} | {c} | {ts_pct:.2%} | {gr_pct:.2%} | {rh_pct:.2%} |\n"
+                )
 
         f.write("\n## Threshold Definitions\n")
         f.write("```json\n")
@@ -130,20 +138,29 @@ def generate_report(metrics: dict, thresholds: dict, report_path: str, results: 
         # Add Cost Evaluation Table
         if results:
             from config.settings import settings
+
             total_q = len(results)
             top_k = getattr(settings, "TOP_K", "N/A")
-            tot_in_tokens = sum(r.get('total_input_tokens', 0) for r in results)
-            sys_tokens = sum(r.get('tokens_system_prompt', 0) for r in results)
-            ret_tokens = sum(r.get('tokens_on_retrieved_chunks', 0) for r in results)
-            emb_tokens = sum(r.get('embedding_token_consumption', 0) for r in results)
-            ans_tokens = sum(r.get('tokens_on_completion', 0) for r in results)
-            cost = sum(r.get('cost', 0) for r in results)
-            avg_latency = sum(r.get('total_time_taken', 0) for r in results) / total_q if total_q > 0 else 0
+            tot_in_tokens = sum(r.get("total_input_tokens", 0) for r in results)
+            sys_tokens = sum(r.get("tokens_system_prompt", 0) for r in results)
+            ret_tokens = sum(r.get("tokens_on_retrieved_chunks", 0) for r in results)
+            emb_tokens = sum(r.get("embedding_token_consumption", 0) for r in results)
+            ans_tokens = sum(r.get("tokens_on_completion", 0) for r in results)
+            cost = sum(r.get("cost", 0) for r in results)
+            avg_latency = (
+                sum(r.get("total_time_taken", 0) for r in results) / total_q
+                if total_q > 0
+                else 0
+            )
 
             f.write("\n## Cost Evaluation\n\n")
-            f.write("| Total Questions | Topk Value | Total Input Tokens | System Prompt Tokens | Retrieved Chunks Tokens | Question Embeding Tokens | Answer Generated Tokens | Cost | Avg Latency |\n")
+            f.write(
+                "| Total Questions | Topk Value | Total Input Tokens | System Prompt Tokens | Retrieved Chunks Tokens | Question Embeding Tokens | Answer Generated Tokens | Cost | Avg Latency |\n"
+            )
             f.write("|---|---|---|---|---|---|---|---|---|\n")
-            f.write(f"| {total_q} | {top_k} | {tot_in_tokens:.1f} | {sys_tokens:.1f} | {ret_tokens:.1f} | {emb_tokens:.1f} | {ans_tokens:.1f} | ${cost:.6f} | {avg_latency:.2f}s |\n")
+            f.write(
+                f"| {total_q} | {top_k} | {tot_in_tokens:.1f} | {sys_tokens:.1f} | {ret_tokens:.1f} | {emb_tokens:.1f} | {ans_tokens:.1f} | ${cost:.6f} | {avg_latency:.2f}s |\n"
+            )
 
     print(f"\nReport successfully generated at: {report_path}")
 
@@ -172,7 +189,9 @@ async def main():
 
     if limit and limit > 0:
         golden_dataset = golden_dataset[:limit]
-        print(f"Successfully loaded {len(golden_dataset)} items (limited from {golden_path})\n")
+        print(
+            f"Successfully loaded {len(golden_dataset)} items (limited from {golden_path})\n"
+        )
     else:
         print(f"Successfully loaded {len(golden_dataset)} items from {golden_path}\n")
 

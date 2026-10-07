@@ -81,8 +81,10 @@ class Settings(BaseSettings):
     PROMPT_COMPRESSION_METHOD: str = "llmlingua2"
     LLMLINGUA_TARGET_TOKEN: int = 200
     PROMPT_COMPRESSION_MAX_CHARS: int = 4000
-    PII_NLP_ENGINE_NAME: str = "spacy" # Options: spacy, stanza, transformers
-    PII_NLP_MODEL_NAME: str = "en_core_web_sm" # e.g. en_core_web_sm, dslim/bert-base-NER
+    PII_NLP_ENGINE_NAME: str = "spacy"  # Options: spacy, stanza, transformers
+    PII_NLP_MODEL_NAME: str = (
+        "en_core_web_sm"  # e.g. en_core_web_sm, dslim/bert-base-NER
+    )
 
 
 settings = Settings()
