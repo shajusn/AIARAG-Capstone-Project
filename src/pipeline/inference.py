@@ -29,6 +29,7 @@ class InferencePipeline:
         self.redactor = None
         if getattr(settings, "USE_PII_REDACTION", False):
             from rag.pii_redactor import PIIRedactor
+
             self.redactor = PIIRedactor()
 
     async def run(self, query: str):

@@ -7,8 +7,8 @@ generated answers against provided rubrics or expected outcomes.
 import json
 import logging
 import re
-from config.settings import settings
 
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +73,15 @@ class LLMJudge:
                 )
                 content = response["message"]["content"]
 
-            default_scores = {"task_success": 0.0, "groundedness": 0.0, "retrieval_hit": 0.0}
-            
+            default_scores = {
+                "task_success": 0.0,
+                "groundedness": 0.0,
+                "retrieval_hit": 0.0,
+            }
+
             try:
                 # first try pure json parsing, finding the { block
-                match = re.search(r'\{.*\}', content.replace('\n', ' '))
+                match = re.search(r"\{.*\}", content.replace("\n", " "))
                 if match:
                     parsed = json.loads(match.group(0))
                     for k in default_scores:
@@ -86,7 +90,7 @@ class LLMJudge:
                     return default_scores
             except:
                 pass
-                
+
             # fallback regex
             for k in default_scores:
                 match = re.search(f'"{k}"\\s*:\\s*([0-9.]+)', content)
@@ -101,6 +105,11 @@ class LLMJudge:
         self, query: str, context: list, generated_answer: str, expected_answer: str
     ) -> dict:
         from rag.prompts.prompts import build_comprehensive_eval_prompt
-        context_str = "\n\n".join([c.get("chunk", str(c)) if isinstance(c, dict) else str(c) for c in context])
-        prompt = build_comprehensive_eval_prompt(query, expected_answer, context_str, generated_answer)
+
+        context_str = "\n\n".join(
+            [c.get("chunk", str(c)) if isinstance(c, dict) else str(c) for c in context]
+        )
+        prompt = build_comprehensive_eval_prompt(
+            query, expected_answer, context_str, generated_answer
+        )
         return await self._generate_combined_scores(prompt)

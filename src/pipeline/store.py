@@ -35,6 +35,7 @@ class DocumentIngestionPipeline:
         self.redactor = None
         if getattr(settings, "USE_PII_REDACTION", False):
             from rag.pii_redactor import PIIRedactor
+
             self.redactor = PIIRedactor()
 
     async def ingest_file(self, path) -> list[str]:
@@ -64,7 +65,9 @@ class DocumentIngestionPipeline:
             if getattr(settings, "USE_HYBRID_EMBEDDING", True):
                 sparse_embedded = self.embedder.get_sparse_embedded(chunks)
                 if sparse_embedded:
-                    logger.info(f"Successfully generated {len(sparse_embedded)} sparse embeddings.")
+                    logger.info(
+                        f"Successfully generated {len(sparse_embedded)} sparse embeddings."
+                    )
 
             logger.info(f"4. Vector Storage.....{file_name}")
 

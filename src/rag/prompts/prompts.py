@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def build_generator_prompt(query: str, context_str: str) -> str:
     try:
         logger.info(f"Building generator prompt for query: {query}")
@@ -17,7 +18,10 @@ Answer:"""
         logger.error(f"Error building generator prompt: {str(e)}")
         raise
 
-def build_comprehensive_eval_prompt(query: str, expected_answer: str, context_str: str, generated_answer: str) -> str:
+
+def build_comprehensive_eval_prompt(
+    query: str, expected_answer: str, context_str: str, generated_answer: str
+) -> str:
     try:
         logger.info(f"Building comprehensive eval prompt for query: {query}")
         return f"""
@@ -42,6 +46,7 @@ Generated Answer: {generated_answer}
         logger.error(f"Error building comprehensive eval prompt: {str(e)}")
         raise
 
+
 def build_multi_query_prompt(query: str, num_queries: int = 3) -> str:
     try:
         logger.info(f"Building multi-query prompt for query: {query}")
@@ -56,6 +61,7 @@ Original question: {query}"""
         logger.error(f"Error building multi-query prompt: {str(e)}")
         raise
 
+
 def build_query_decomposition_prompt(query: str) -> str:
     try:
         logger.info(f"Building query decomposition prompt for query: {query}")
@@ -66,6 +72,7 @@ Output (3 queries): Provide these alternative questions separated by newlines. D
     except Exception as e:
         logger.error(f"Error building query decomposition prompt: {str(e)}")
         raise
+
 
 def build_hyde_prompt(query: str) -> str:
     try:
@@ -79,6 +86,7 @@ Passage:"""
     except Exception as e:
         logger.error(f"Error building HyDE prompt: {str(e)}")
         raise
+
 
 def build_query_rewriting_prompt(query: str) -> str:
     try:

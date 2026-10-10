@@ -34,4 +34,4 @@ echo "Starting RAG Evaluation Pipeline..."
 echo "=========================================="
 
 # Run the evaluation script
-python "${PROJECT_ROOT}/scripts/run_rag_eval.py"
+python "${PROJECT_ROOT}/scripts/run_rag_eval.py" "$@"

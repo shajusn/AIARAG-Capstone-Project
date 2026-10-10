@@ -10,7 +10,12 @@ from config.logging_config import setup_logger
 from config.settings import settings
 from rag.embeddings import ModelSelector
 from rag.generator import LLMGenerator
-from rag.prompts.prompts import build_multi_query_prompt, build_query_decomposition_prompt, build_hyde_prompt, build_query_rewriting_prompt
+from rag.prompts.prompts import (
+    build_hyde_prompt,
+    build_multi_query_prompt,
+    build_query_decomposition_prompt,
+    build_query_rewriting_prompt,
+)
 from rag.vector_store import BaseVectorStore
 
 logger = setup_logger(__name__)
@@ -34,23 +39,32 @@ class DenseRetriever(BaseRetriever):
             fetch_k = top_k * 4 if self.reranker else top_k
 
             queries_to_embed = [query]
-            
-            if getattr(settings, "USE_MULTI_QUERY", False) or getattr(settings, "USE_QUERY_DECOMPOSITION", False) or getattr(settings, "USE_HYDE", False) or getattr(settings, "USE_QUERY_REWRITING", False):
+
+            if (
+                getattr(settings, "USE_MULTI_QUERY", False)
+                or getattr(settings, "USE_QUERY_DECOMPOSITION", False)
+                or getattr(settings, "USE_HYDE", False)
+                or getattr(settings, "USE_QUERY_REWRITING", False)
+            ):
                 llm = LLMGenerator()
                 augmented_queries = []
-                
+
                 if getattr(settings, "USE_MULTI_QUERY", False):
                     logger.info("Generating multi-queries")
                     prompt = build_multi_query_prompt(query)
                     res = await llm.generate_text(prompt)
-                    augmented_queries.extend([q.strip() for q in res.split('\n') if q.strip()])
-                    
+                    augmented_queries.extend(
+                        [q.strip() for q in res.split("\n") if q.strip()]
+                    )
+
                 if getattr(settings, "USE_QUERY_DECOMPOSITION", False):
                     logger.info("Generating decomposed queries")
                     prompt = build_query_decomposition_prompt(query)
                     res = await llm.generate_text(prompt)
-                    augmented_queries.extend([q.strip() for q in res.split('\n') if q.strip()])
-                    
+                    augmented_queries.extend(
+                        [q.strip() for q in res.split("\n") if q.strip()]
+                    )
+
                 if getattr(settings, "USE_HYDE", False):
                     logger.info("Generating hypothetical document for HyDE")
                     prompt = build_hyde_prompt(query)
@@ -65,20 +79,20 @@ class DenseRetriever(BaseRetriever):
                     print(res)
                     if res and res.strip():
                         augmented_queries.append(res.strip())
-                
+
                 # Add augmented queries, avoiding duplicates
                 for q in augmented_queries:
                     if q and q not in queries_to_embed:
                         queries_to_embed.append(q)
-                
+
                 logger.info(f"Total queries to embed: {len(queries_to_embed)}")
 
             all_results = []
             seen_chunks = set()
-            
+
             for q in queries_to_embed:
                 query_embedding = await ModelSelector.get_single_embedding(q)
-                
+
                 sparse_embedding = None
                 if getattr(settings, "USE_HYBRID_SEARCH", False):
                     try:
@@ -86,24 +100,26 @@ class DenseRetriever(BaseRetriever):
                         if sparse_obj:
                             sparse_embedding = {
                                 "indices": sparse_obj.indices.tolist(),
-                                "values": sparse_obj.values.tolist()
+                                "values": sparse_obj.values.tolist(),
                             }
                     except Exception as e:
-                        logger.warning(f"Failed to generate sparse query embedding: {e}")
-                
+                        logger.warning(
+                            f"Failed to generate sparse query embedding: {e}"
+                        )
+
                 results = self.vector_store.search(
-                    query_embedding, 
-                    top_k=fetch_k, 
-                    sparse_embedding=sparse_embedding
+                    query_embedding, top_k=fetch_k, sparse_embedding=sparse_embedding
                 )
-                
+
                 for r in results:
                     chunk_text = r.get("chunk", str(r))
                     if chunk_text not in seen_chunks:
                         seen_chunks.add(chunk_text)
                         all_results.append(r)
-            
-            logger.info(f"Initial retrieval fetched {len(all_results)} unique results across all queries")
+
+            logger.info(
+                f"Initial retrieval fetched {len(all_results)} unique results across all queries"
+            )
 
             # Apply reranker if configured
             if self.reranker and all_results:
