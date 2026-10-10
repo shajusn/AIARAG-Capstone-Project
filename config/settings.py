@@ -86,9 +86,5 @@ class Settings(BaseSettings):
         "en_core_web_sm"  # e.g. en_core_web_sm, dslim/bert-base-NER
     )
 
-    ENABLE_SEMANTIC_CACHE: bool = False
-    SEMANTIC_CACHE_THRESHOLD: float = 0.90
-    SEMANTIC_CACHE_JSON_PATH: str = "data/vector_store_cache.json"
-
 
 settings = Settings()
