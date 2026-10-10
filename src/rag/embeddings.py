@@ -23,10 +23,8 @@ from openai import AsyncOpenAI
 
 from config.logging_config import setup_logger
 from config.settings import settings
-from rag.embedding_cache import EmbeddingCache
 
 logger = setup_logger(__name__)
-_embedding_cache = EmbeddingCache()
 
 
 # Template for our file loaders
@@ -97,15 +95,8 @@ class ModelSelector:
             chunk_size = len(chunks)
             start = 1
             for chunk in chunks:
-                cached_emb = await _embedding_cache.get(chunk)
-                if cached_emb:
-                    logger.info("Returning cached embedding from Embedding Cache")
-                    vector.append(cached_emb)
-                else:
-                    embedded = await model.get_embedding(chunk)
-                    await _embedding_cache.set(chunk, embedded)
-                    vector.append(embedded)
-                
+                embedded = await model.get_embedding(chunk)
+                vector.append(embedded)
                 logger.info(
                     f"Embedding Progress: {round(start / chunk_size * 100, 2)}%"
                 )
@@ -119,19 +110,12 @@ class ModelSelector:
 
     @staticmethod
     async def get_single_embedding(query: str) -> list[float]:
-        cached_emb = await _embedding_cache.get(query)
-        if cached_emb:
-            logger.info("Returning cached embedding from Embedding Cache")
-            return cached_emb
-
         model = ModelSelector._get_model()
         logger.info(
             f"Generating embedding for query using {settings.EMBEDDING_MODEL_SOURCE} model"
         )
         try:
-            emb = await model.get_embedding(query)
-            await _embedding_cache.set(query, emb)
-            return emb
+            return await model.get_embedding(query)
         except Exception as e:
             logger.error(f"Error generating single embedding: {e}")
             raise

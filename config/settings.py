@@ -90,9 +90,5 @@ class Settings(BaseSettings):
     SEMANTIC_CACHE_THRESHOLD: float = 0.90
     SEMANTIC_CACHE_JSON_PATH: str = "data/vector_store_cache.json"
 
-    ENABLE_EMBEDDING_CACHE: bool = False
-    EMBEDDING_CACHE_JSON_PATH: str = "data/vector_store_ecache.json"
-    EMBEDDING_CACHE_TTL_HOURS: float = 24.0
-
 
 settings = Settings()
