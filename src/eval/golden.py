@@ -49,25 +49,49 @@ async def run_evaluation(
 
         # 1. Measure Retrieval Latency & Hit Rate
         t0 = time.time()
-        try:
-            context = await pipeline.retriever.retrieve(query, top_k=pipeline.top_k)
-        except Exception as e:
-            logger.error(f"Retrieval failed for {query}: {e}")
-            context = []
-        t1 = time.time()
-        retrieval_latency = t1 - t0
 
-        # 2. Measure Generation Latency
-        try:
-            answer, usage_info = await pipeline.generator.generate_answer(
-                query, context, return_usage=True
-            )
-        except Exception as e:
-            logger.error(f"Generation failed for {query}: {e}")
-            answer = ""
-            usage_info = {"prompt_tokens": 0, "completion_tokens": 0}
-        t2 = time.time()
-        generation_latency = t2 - t1
+        is_cache_hit = False
+        cached_answer = (
+            await pipeline.semantic_cache.get(query)
+            if hasattr(pipeline, "semantic_cache")
+            else None
+        )
+
+        if cached_answer:
+            is_cache_hit = True
+            context = []
+            answer = cached_answer
+            usage_info = {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "context_tokens": 0,
+            }
+            t1 = time.time()
+            t2 = time.time()
+            retrieval_latency = t1 - t0
+            generation_latency = 0.0
+        else:
+            try:
+                context = await pipeline.retriever.retrieve(query, top_k=pipeline.top_k)
+            except Exception as e:
+                logger.error(f"Retrieval failed for {query}: {e}")
+                context = []
+            t1 = time.time()
+            retrieval_latency = t1 - t0
+
+            # 2. Measure Generation Latency
+            try:
+                answer, usage_info = await pipeline.generator.generate_answer(
+                    query, context, return_usage=True
+                )
+                if hasattr(pipeline, "semantic_cache"):
+                    await pipeline.semantic_cache.set(query, answer)
+            except Exception as e:
+                logger.error(f"Generation failed for {query}: {e}")
+                answer = ""
+                usage_info = {"prompt_tokens": 0, "completion_tokens": 0}
+            t2 = time.time()
+            generation_latency = t2 - t1
 
         total_latency = t2 - t0
 
@@ -128,6 +152,7 @@ async def run_evaluation(
                 "tokens_on_retrieved_chunks": tokens_on_retrieved_chunks,
                 "embedding_token_consumption": embedding_tokens,
                 "tokens_on_completion": completion_tokens,
+                "semantic_cache_hit": is_cache_hit,
             }
         )
 

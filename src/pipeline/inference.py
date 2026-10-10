@@ -5,6 +5,7 @@ from config.logging_config import setup_logger
 from config.settings import settings
 from rag.generator import LLMGenerator
 from rag.retriever import DenseRetriever
+from rag.semantic_cache import SemanticCache
 from rag.vector_store import VectorStoreFactory
 
 logger = setup_logger(__name__)
@@ -32,6 +33,8 @@ class InferencePipeline:
 
             self.redactor = PIIRedactor()
 
+        self.semantic_cache = SemanticCache()
+
     async def run(self, query: str):
         logger.info(f"Running inference for query: '{query}'")
         try:
@@ -39,6 +42,12 @@ class InferencePipeline:
                 logger.info("Redacting PII from query")
                 query = self.redactor.redact_text(query)
                 logger.info(f"Redacted query: '{query}'")
+
+            # Check semantic cache
+            cached_answer = await self.semantic_cache.get(query)
+            if cached_answer:
+                logger.info("Returning cached answer from Semantic Cache")
+                return cached_answer
 
             # 1. Retrieve Context
             logger.info("Step 1: Retrieving context")
@@ -54,6 +63,9 @@ class InferencePipeline:
             if self.redactor:
                 logger.info("Redacting PII from generated answer")
                 answer = self.redactor.redact_text(answer)
+
+            # Update semantic cache
+            await self.semantic_cache.set(query, answer)
 
             logger.info("Inference complete.")
             return answer
