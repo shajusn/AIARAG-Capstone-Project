@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import uuid
+from datetime import datetime, timezone
 
 from config.settings import settings
 from rag.embeddings import ModelSelector
@@ -158,17 +159,32 @@ class SemanticCache:
                 except json.JSONDecodeError:
                     data = []
 
-        data.append({"query": query, "embedding": query_embedding, "answer": answer})
+        now = datetime.now(timezone.utc).isoformat()
+        ttl = getattr(settings, "SEMANTIC_CACHE_TTL_HOURS", 24.0)
+
+        data.append(
+            {
+                "query": query,
+                "embedding": query_embedding,
+                "answer": answer,
+                "created_at": now,
+                "ttl_hours": ttl,
+            }
+        )
 
         with open(self.filepath, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
 
     def _set_chroma(self, query: str, query_embedding: list[float], answer: str):
+        now = datetime.now(timezone.utc).isoformat()
+        ttl = getattr(settings, "SEMANTIC_CACHE_TTL_HOURS", 24.0)
         point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, query))
         self.collection.upsert(
             documents=[query],
             embeddings=[query_embedding],
-            metadatas=[{"answer": answer, "query": query}],
+            metadatas=[
+                {"answer": answer, "query": query, "created_at": now, "ttl_hours": ttl}
+            ],
             ids=[point_id],
         )
 
@@ -185,6 +201,8 @@ class SemanticCache:
             )
             self.collection_exist = True
 
+        now = datetime.now(timezone.utc).isoformat()
+        ttl = getattr(settings, "SEMANTIC_CACHE_TTL_HOURS", 24.0)
         point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, query))
         self.client.upsert(
             collection_name=self.collection_name,
@@ -192,7 +210,12 @@ class SemanticCache:
                 PointStruct(
                     id=point_id,
                     vector={"dense": query_embedding},
-                    payload={"query": query, "answer": answer},
+                    payload={
+                        "query": query,
+                        "answer": answer,
+                        "created_at": now,
+                        "ttl_hours": ttl,
+                    },
                 )
             ],
         )
